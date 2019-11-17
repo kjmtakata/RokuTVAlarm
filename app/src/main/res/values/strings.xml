@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Roku TV Alarm</string>
+    <string name="title_activity_alarms_list">AlarmsList</string>
+</resources>
