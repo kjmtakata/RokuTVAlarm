@@ -1,5 +1,6 @@
 package com.kevintakata.rokutvalarm;
 
+import android.app.AlarmManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -9,6 +10,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+
+import com.google.gson.Gson;
+
+import java.text.SimpleDateFormat;
 
 public class AlarmReceiver extends BroadcastReceiver {
     private static String TAG = AlarmReceiver.class.getSimpleName();
@@ -46,10 +51,38 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         new UPnPDiscovery(context, serialNumber, channel).execute();
 
-        // remove alarm from shared preferences
-        SharedPreferences.Editor editor =
-                context.getSharedPreferences("alarms", Context.MODE_PRIVATE).edit();
-        editor.remove(id);
+        SharedPreferences sharedPreferences = context.getSharedPreferences("alarms", Context.MODE_PRIVATE);
+        String alarmJson = sharedPreferences.getString(id, null);
+
+        Gson gson = new Gson();
+        Alarm alarm = gson.fromJson(alarmJson, Alarm.class);
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        if(!alarm.isOneTime()) {
+            alarm.setNextAlarm();
+            AlarmManager alarmMgr = (AlarmManager)
+                    context.getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+//            Intent intent = new Intent(getBaseContext(), AlarmReceiver.class);
+            intent.putExtra("serial_number", alarm.getDevice().getSerialNumber());
+            intent.putExtra("id", alarm.getId());
+            intent.putExtra("channel", alarm.getChannel());
+            PendingIntent alarmIntent = PendingIntent.getBroadcast(context,
+                    Integer.parseInt(alarm.getId()), intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT);
+
+            alarmMgr.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarm.getTime().getTimeInMillis(), alarmIntent);
+            editor.putString(alarm.getId(), gson.toJson(alarm));
+
+            SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM hh:mm a");
+
+            Log.d(TAG, "Alarm time: " + sdf.format(alarm.getTime().getTime()));
+        } else {
+            editor.remove(id);
+        }
+
+
         editor.apply();
+
     }
 }
