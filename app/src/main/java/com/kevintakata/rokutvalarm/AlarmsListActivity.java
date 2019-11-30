@@ -17,6 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
@@ -52,6 +53,24 @@ public class AlarmsListActivity extends AppCompatActivity {
 
         mAlarmArrayAdapter = new AlarmArrayAdapter(this, mAlarms);
         listView.setAdapter(mAlarmArrayAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Log.d(TAG, "delete");
+                Alarm alarm = mAlarms.get(position);
+                Log.d(TAG, "time: " + alarm.getTime().toString());
+
+                // cancel alarm
+                Intent intent = new Intent(getBaseContext(), AlarmReceiver.class);
+                intent.putExtra("serial_number", alarm.getDevice().getSerialNumber());
+                intent.putExtra("id", alarm.getId());
+                if(PendingIntent.getBroadcast(getBaseContext(),
+                        Integer.parseInt(alarm.getId()), intent,
+                        PendingIntent.FLAG_NO_CREATE) != null) {
+                    Toast.makeText(getBaseContext(), "Alarm Set", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {

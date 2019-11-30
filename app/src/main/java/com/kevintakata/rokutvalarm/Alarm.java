@@ -62,6 +62,10 @@ public class Alarm {
         return true;
     }
 
+    public boolean isInPast() {
+        return getTime().before(Calendar.getInstance());
+    }
+
     public void setId(String id) {
         mId = id;
     }
